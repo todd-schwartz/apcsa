@@ -41,7 +41,6 @@ def Parse_Args():
     
     return (parsed, args.student_dir, args.csv, args.output, args.file, args.golden_source)
 
-     
 
 def main():    
     (parsed, studentDir, csv, addOutput, addFile, golden_source) = Parse_Args()

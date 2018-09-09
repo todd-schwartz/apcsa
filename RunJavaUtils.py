@@ -131,6 +131,10 @@ def Change_Binary_To_String_List(binary):
                         tempStr = tempStr + str(c)
             else:
                 tempStr = tempStr + "utf(" + str(a) + ")"
+    if (len(tempStr) != 0):
+        tempStr = tempStr.rstrip()
+        result.append("\"" + tempStr + "\"")
+        
     return result
  
 #
