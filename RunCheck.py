@@ -4,59 +4,34 @@ import RunJavaUtils
 from collections import defaultdict
 import argparse
 
-# find all the files in the path that have the same base names
-def Find_Files(rootName, baseNames):
-    filedict = defaultdict(list)
 
-    for root, dirs, files in os.walk(rootName):
-        for file in files:
-            if (".java" in file):
-                chopPoint = file.find(".java")
-                checkFile = file[0:chopPoint]
-                if (' ' in checkFile):
-                    checkFile = checkFile[0:checkFile.find(' ')]
-                if ('(' in checkFile):
-                    checkFile = checkFile[0:checkFile.find('(')]                
-                for baseName in baseNames:
-                    if (checkFile == baseName):
-                        filedict[baseName].append(file)
-                        break
-    return filedict
 
-    
 
 #
-# one by one, copy the files from the source dir to the temp dir, run them,
-# and store off the results in a map
-# map is [baseName][original file name]["author"]
-#                                      ["output"]
-def Copy_And_Run_Files(sourceDir, tempDir, f):    
-    cwd = os.getcwd()
-    os.chdir(tempDir)
+def Create_File_List(sourceDir):
     dirs = os.listdir(sourceDir)
-
-    f.write("FileName, Author, Class Name, Package, Ran\n")
+    files = []
     for file in dirs:
-        if (".java" == file[(len(file) - len(".java")):]):
-            source = sourceDir + "\\" + file           
-            (author, package, className) = RunJavaUtils.Get_Java_Info(source)
-            print (source + " " + author + " " + package + " " + className)
-            destName = className + ".java"
-            dest = tempDir + "\\" + destName
-            print("copying " + source + " to " + dest)
-            copyfile(source, dest)                                               
-            (success, output) = RunJavaUtils.Run_Java_File(destName, package, className)
-            f.write(file + "," + author + "," + className + "," + package + "," + str(success) + "\n") 
-            os.remove(destName)   
-    os.chdir(cwd)
+        if (".java" == file[(len(file) - len(".java")):]):            
+            files.append(file)
+    return files 
+
+ 
     
 
 
 
 def Parse_Args():
     parser = argparse.ArgumentParser()    
-    parser.add_argument('-student_dir', type=str, help="path to where the student copies of the java source resides")
-    parser.add_argument('-output', type=str, help="name of the .csv file where the results should be stored")
+    parser.add_argument('-student_dir', type=str, required=True, help="path to where the student copies of the java source resides")
+    parser.add_argument('-csv', type=str, required=True, help="name of the .csv file where the results should be stored")
+    parser.add_argument('-output', dest='output', action='store_true', help='append the output from running the file into the .csv')
+    parser.add_argument('-no_output', dest='output', action='store_false', help='do not append the output from running the file into the .csv')
+    parser.add_argument('-file', dest='file', action='store_true', help='append the original student source into the .csv')
+    parser.add_argument('-no_file', dest='file', action='store_false', help='do not append the original student source into the .csv')
+    parser.add_argument("-golden_source", help='if you want to compare the output of a golden source to the student sources specify a file with this option')
+    parser.set_defaults(output=True)
+    parser.set_defaults(file=True)
     args = parser.parse_args()
     parsed = True
     if (args.student_dir == None or args.output == None):
@@ -64,20 +39,25 @@ def Parse_Args():
         parser.print_help()
         parsed = False
     
-    return (parsed, args.student_dir, args.output)
+    return (parsed, args.student_dir, args.csv, args.output, args.file, args.golden_source)
 
-    
-    
+     
 
 def main():    
-    (parsed, studentDir, output) = Parse_Args()
+    (parsed, studentDir, csv, addOutput, addFile, golden_source) = Parse_Args()
     if (parsed):
         tempPath = RunJavaUtils.Create_Temp_Dir()
-
-        f=open(output, "w")    
-        Copy_And_Run_Files(studentDir, tempPath, f)
+        goldenLines = []
+        if (golden_source != None):
+            (success, author, package, className, goldenLines) = RunJavaUtils.Copy_And_Run_Java_File(tempPath, golden_source)
+            if (success == False):
+                print("Build failure for golden source")
+                return                
+        f=open(csv, "w")
+        files = Create_File_List(studentDir)    
+        RunJavaUtils.Copy_And_Run_Files(studentDir, files, tempPath, f, addOutput, addFile, goldenLines)
         f.close()
-        print ("Created:" + output)
+        print ("Created:" + csv)
         RunJavaUtils.Clean_And_Remove_Temp_Dir(tempPath)
 
 if __name__ == '__main__':
