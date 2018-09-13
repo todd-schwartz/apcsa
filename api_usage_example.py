@@ -3,6 +3,7 @@ from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 import json
+import datetime
 
 
 # If modifying these scopes, delete the file token.json.
@@ -16,6 +17,16 @@ def pretty_print(data):
 
 
 courseId = '14911700941'
+
+
+def due_datetime(assignment):
+    result = None
+    if 'dueDate' in assignment:
+        due_time = assignment['dueTime']
+        due_date = assignment['dueDate']
+        result = datetime.datetime(year=due_date['year'], month=due_date['month'], day=due_date['day'],
+                                   hour=due_time['hours'], minute=due_time.get('minutes', 0))
+    return result
 
 
 def main():
@@ -34,23 +45,28 @@ def main():
     print('===================================================================')
     print()
     courseWork = service.courses().courseWork().list(courseId=courseId).execute()
-    pretty_print(courseWork['courseWork'])
+    assignments = filter(lambda x: x['workType'] == 'ASSIGNMENT', courseWork['courseWork'])
+    assignments_sorted_by_due_date = sorted(assignments, key=lambda x: due_datetime(x))
+    for index, assignment in enumerate(assignments_sorted_by_due_date):
+        line_item = '{}. {} (due {})'.format(index, assignment['title'], due_datetime(assignment))
+        print(line_item)
 
     print()
-    print('Student submissions for 1.5 Homework:')
+    selection = raw_input('Select one of the above assignments: ')
+    selected_assignment = assignments_sorted_by_due_date[int(selection)]
+
+    print()
+    print('Student submissions for {}:'.format(selected_assignment['title']))
     print('===================================================================')
     print()
-    courseWorkId = {item['title']: item['id'] for item in courseWork['courseWork']}
     studentSubmissions = service.courses().courseWork().studentSubmissions()
-    submissionsFor1_5Homework = studentSubmissions.list(courseId=courseId,
-                                                        courseWorkId=courseWorkId['1.5 Homework']).execute()
-    for submission in submissionsFor1_5Homework['studentSubmissions']:
+    submissions_for_sslected_assignment = studentSubmissions.list(courseId=courseId,
+                                                                  courseWorkId=selected_assignment['id']).execute()
+    for submission in submissions_for_sslected_assignment['studentSubmissions']:
         studentId = submission['userId']
         studentProfile = service.userProfiles().get(userId=studentId).execute()
-        print('Student Profile:')
-        pretty_print(studentProfile)
-        print('Submission:')
-        pretty_print(submission)
+        print('Student:', studentProfile['name']['fullName'])
+        print('Submission:', submission)
         print("---------------------------------------------")
 
 
