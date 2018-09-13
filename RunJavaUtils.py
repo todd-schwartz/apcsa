@@ -4,6 +4,7 @@ from shutil import copyfile
 import subprocess
 import re
 import ExcelWriter 
+from unittest.test import test_result
 
 
 
@@ -31,13 +32,9 @@ def Clean_And_Remove_Temp_Dir(tempDir):
 # display in the .csv to be correct
 def Convert_Source_To_Excel_Compat_List(sourceName):
     sourceFile = open(sourceName, "r")
-    result = []
-    for line in sourceFile.readlines():
-        modLine = line.rstrip()
-        modLine = modLine.replace("\t", "    ")
-        result.append("\"" + modLine + "\"")
+    result = sourceFile.readlines();
     sourceFile.close()
-    return result 
+    return result
    
 def Compare_Lines(goldenList, studentList):
     maxLen = len(goldenList)
@@ -199,10 +196,10 @@ def Copy_And_Run_Files(sourceDir, files, tempDir, excelWriter, addOutput, addFil
                 stringLists.append([""])
         if (addOutput):                
             stringLists.append(output)
-        if (addFile):
-            stringLists.append(Convert_Source_To_Excel_Compat_List(source))
         for stringList in stringLists:
-            excelWriter.Add_String_Array(stringList)
+            excelWriter.Add_String_Array(stringList, 8)
+        if (addFile):
+            excelWriter.Add_String_Array(Convert_Source_To_Excel_Compat_List(source), 4)
         excelWriter.Inc_Row()               
  
                 
