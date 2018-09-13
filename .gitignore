@@ -1,0 +1,7 @@
+
+*.csv
+.metadata/
+.project
+.pydevproject
+*.pyc
+
