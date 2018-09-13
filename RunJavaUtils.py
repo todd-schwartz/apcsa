@@ -3,6 +3,7 @@ from shutil import move
 from shutil import copyfile
 import subprocess
 import re
+import ExcelWriter 
 
 
 
@@ -28,7 +29,7 @@ def Clean_And_Remove_Temp_Dir(tempDir):
 #
 # We need the source lines to be surrounded by "    " in order for the 
 # display in the .csv to be correct
-def Convert_Source_To_CSV_Compat_List(sourceName):
+def Convert_Source_To_Excel_Compat_List(sourceName):
     sourceFile = open(sourceName, "r")
     result = []
     for line in sourceFile.readlines():
@@ -86,30 +87,6 @@ def Get_Java_Info(fileName):
     javaFile.close()
     return (author, package, className)
 
-#appends the strings onto the end of the csv.
-#assumes the first line should only be separated by 1 comma
-#and all others by n commas
-#used for adding the golden/actual lines when a diff is detected
-# 
-def Append_String_Lists(numCommas, lists):
-    result = ""
-    commas = ""    
-    for i in range(0, numCommas):
-        commas = commas + ","
-    maxLen = 0
-    for listN in lists:
-        maxLen = max(len(listN), maxLen)
-    for i in range(0, maxLen):
-        if (i == 0):
-            result = result + ","
-        else:
-            result = result + "\n"
-            result = result + commas
-        for listN in lists:
-            if (i < len(listN)):
-                result = result + listN[i]            
-            result = result + ","   
-    return (result)   
 
 
 def Change_Binary_To_String_List(binary):
@@ -125,7 +102,7 @@ def Change_Binary_To_String_List(binary):
                     if (c == '\n'):
                         #remove trailing spaces, they are impossible to mark wrong since they are ambiguous in text
                         tempStr = tempStr.rstrip()
-                        result.append("\"" + tempStr + "\"")
+                        result.append(tempStr)
                         tempStr = ""
                     else:
                         tempStr = tempStr + str(c)
@@ -133,7 +110,7 @@ def Change_Binary_To_String_List(binary):
                 tempStr = tempStr + "utf(" + str(a) + ")"
     if (len(tempStr) != 0):
         tempStr = tempStr.rstrip()
-        result.append("\"" + tempStr + "\"")
+        result.append(tempStr)
         
     return result
  
@@ -185,23 +162,33 @@ def Copy_And_Run_Java_File(tempDir, source):
     os.remove(dest) 
     return (success, author, package, className, output)
 
+def Add_Header(values, excelWriter):
+
+    for value in values:
+        excelWriter.Add_String(value)
+    excelWriter.Inc_Row()
 # one by one, copy the files from the source dir to the temp dir, run them,
 # and store off the results in a .csv
-def Copy_And_Run_Files(sourceDir, files, tempDir, csv, addOutput, addFile, goldLines):    
-    csv.write("FileName, Author, Class Name, Package, Ran")
+def Copy_And_Run_Files(sourceDir, files, tempDir, excelWriter, addOutput, addFile, goldLines):
+    
+    header = ["FileName", "Author", "Class Name", "Package", "Ran"]
     if (len(goldLines) != 0):
         addOutput = True
-        csv.write(", diffLines")
-        csv.write(", golden output")
+        header.append("diffLines")
+        header.append("golden output")
     if (addOutput):
-        csv.write(", output")
+        header.append("output")
     if (addFile):
-        csv.write(", sourceFile")
-    csv.write("\n")
+        header.append("sourceFile")
+    Add_Header(header, excelWriter)
     for file in files: 
         source = sourceDir + "\\" + file       
         (success, author, package, className, output) = Copy_And_Run_Java_File(tempDir, source)
-        csv.write(file + "," + author + "," + className + "," + package + "," + str(success))
+        excelWriter.Add_String(file)
+        excelWriter.Add_String(author)
+        excelWriter.Add_String(className)
+        excelWriter.Add_String(package)
+        excelWriter.Add_String(str(success))
         stringLists=[]
         if (len(goldLines)):
             if (success):
@@ -213,10 +200,11 @@ def Copy_And_Run_Files(sourceDir, files, tempDir, csv, addOutput, addFile, goldL
         if (addOutput):                
             stringLists.append(output)
         if (addFile):
-            stringLists.append(Convert_Source_To_CSV_Compat_List(source))               
-        if (len(stringLists) != 0):            
-            csv.write(Append_String_Lists(5, stringLists))          
-        csv.write("\n") 
+            stringLists.append(Convert_Source_To_Excel_Compat_List(source))
+        for stringList in stringLists:
+            excelWriter.Add_String_Array(stringList)
+        excelWriter.Inc_Row()               
+ 
                 
     
   
