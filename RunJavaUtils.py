@@ -31,9 +31,12 @@ def Clean_And_Remove_Temp_Dir(tempDir):
 # We need the source lines to be surrounded by "    " in order for the 
 # display in the .csv to be correct
 def Convert_Source_To_Excel_Compat_List(sourceName):
-    sourceFile = open(sourceName, "r")
-    result = sourceFile.readlines();
-    sourceFile.close()
+    try:
+        sourceFile = open(sourceName, "r")
+        result = sourceFile.readlines();
+        sourceFile.close()
+    except UnicodeDecodeError:
+        result = ["File cannot be read as text"]    
     return result
    
 def Compare_Lines(goldenList, studentList):
@@ -146,8 +149,10 @@ def Run_Java_File(destName, package, baseName):
         os.rmdir(package)
     return (success, output)
 
-def Copy_And_Run_Java_File(tempDir, source):
-    (author, package, className) = Get_Java_Info(source)            
+def Copy_And_Run_Java_File(tempDir, source, classNameArg):
+    (author, package, className) = Get_Java_Info(source)
+    if (classNameArg != None):
+        className = classNameArg            
     destName = className + ".java"
     dest = tempDir + "\\" + destName
     print("copying " + source + " to " + dest)
@@ -164,11 +169,9 @@ def Add_Header(values, excelWriter):
     for value in values:
         excelWriter.Add_String(value)
     excelWriter.Inc_Row()
-# one by one, copy the files from the source dir to the temp dir, run them,
-# and store off the results in a .csv
-def Copy_And_Run_Files(sourceDir, files, tempDir, excelWriter, addOutput, addFile, goldLines):
     
-    header = ["FileName", "Author", "Class Name", "Package", "Ran"]
+def Create_Header(excelWriter, addOutput, addFile, goldLines):
+    header = ["Author", "Ran"]
     if (len(goldLines) != 0):
         addOutput = True
         header.append("diffLines")
@@ -178,13 +181,9 @@ def Copy_And_Run_Files(sourceDir, files, tempDir, excelWriter, addOutput, addFil
     if (addFile):
         header.append("sourceFile")
     Add_Header(header, excelWriter)
-    for file in files: 
-        source = sourceDir + "\\" + file       
-        (success, author, package, className, output) = Copy_And_Run_Java_File(tempDir, source)
-        excelWriter.Add_String(file)
-        excelWriter.Add_String(author)
-        excelWriter.Add_String(className)
-        excelWriter.Add_String(package)
+    
+def Append_Run_Data(fileName, success, author, package, className, output, source, excelWriter, addOutput, addFile, goldLines):
+        excelWriter.Add_String(author)       
         excelWriter.Add_String(str(success))
         stringLists=[]
         if (len(goldLines)):
@@ -194,13 +193,23 @@ def Copy_And_Run_Files(sourceDir, files, tempDir, excelWriter, addOutput, addFil
             else:
                 stringLists.append([""])
                 stringLists.append([""])
-        if (addOutput):                
+        if (addOutput):                            
             stringLists.append(output)
         for stringList in stringLists:
             excelWriter.Add_String_Array(stringList, 8)
-        if (addFile):
+        if (addFile and source != ""):
             excelWriter.Add_String_Array(Convert_Source_To_Excel_Compat_List(source), 4)
-        excelWriter.Inc_Row()               
+        excelWriter.Inc_Row()  
+# one by one, copy the files from the source dir to the temp dir, run them,
+# and store off the results in a .csv
+def Copy_And_Run_Files(sourceDir, files, tempDir, excelWriter, addOutput, addFile, goldLines):
+    Create_Header( excelWriter, addOutput, addFile, goldLines)
+
+    for file in files: 
+        source = sourceDir + "\\" + file       
+        (success, author, package, className, output) = Copy_And_Run_Java_File(tempDir, source, None)
+        Append_Run_Data(file, success, author, package, className, output, source, excelWriter, addOutput, addFile, goldLines)
+             
  
                 
     

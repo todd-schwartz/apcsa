@@ -33,6 +33,7 @@ class ExcelWriter:
     
     def Inc_Row(self):
         self.currentRow = self.endRow + 1
+        self.endRow = self.currentRow
         self.currentCol = 0
         
     def Inc_Max_Col(self, stringVal, addVal):
@@ -74,11 +75,5 @@ class ExcelWriter:
             self.worksheet.set_column(colString, colWidth)
             colNum = colNum + 1        
         self.workbook.close()
-        print("Created:" + self.name)
-        
-
-
-excelWriter = ExcelWriter("../test.xlsx")
-excelWriter.Add_String_Array(["this is\n","\ta test\n","\t\tanother test\n","final test\n"], 8)
-excelWriter.Close()
+        print("Created:" + self.name)        
 
