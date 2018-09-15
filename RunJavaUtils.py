@@ -3,14 +3,14 @@ from shutil import move
 from shutil import copyfile
 import subprocess
 import re
+import tempfile
 import ExcelWriter 
 from unittest.test import test_result
 
 
 
 def Create_Temp_Dir():    
-    tempBase = os.environ['TEMP']
-    tempBase += "\\javaTemp"
+    tempBase = os.path.join(tempfile.mkdtemp(), 'javaTemp')
     temp = tempBase
     tempCount = 0
     while(os.path.exists(temp)):
@@ -23,7 +23,7 @@ def Clean_And_Remove_Temp_Dir(tempDir):
     dirs = os.listdir(tempDir)
     for file in dirs:
         if (file != "." and file != ".."):            
-            source = tempDir + "\\" + file
+            source = os.path.join(tempDir, file)
             os.remove(source)
     os.rmdir(tempDir)
 
@@ -161,7 +161,7 @@ def Copy_And_Run_Java_File(tempDir, source, classNameArg):
     os.chdir(tempDir)
     (success, output) = Run_Java_File(destName, package, className)
     os.chdir(cwd)
-    os.remove(dest) 
+    os.remove(dest)
     return (success, author, package, className, output)
 
 def Add_Header(values, excelWriter):
