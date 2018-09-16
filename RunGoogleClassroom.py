@@ -80,56 +80,86 @@ def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWr
     studentSubmissions = service.courses().courseWork().studentSubmissions()
     submissions_for_sslected_assignment = studentSubmissions.list(courseId=courseId,
                                                                   courseWorkId=assignmentSelected['id']).execute()
+
+
+    # We want to print the submissions sorted by name, so create a sorted list of names
+    # and a map of ID -> name
+    studentIDToNameMap={}
+    studentNameList=[]
+    studentInfo = service.courses().students().list(courseId=courseId).execute();
+    studentIDs = studentInfo['students']
+    for student in studentIDs:
+        studentName = student['profile']['name']['fullName'].lower()
+        studentNameList.append(studentName)
+        studentID = student['profile']['id']
+        studentIDToNameMap[studentID]=studentName
+
+    #sort the student names
+    studentNameList.sort()
+
+    # we will create a map of list of submissions - sorted by name, init the map
+    submissionList={}
+    for student in studentNameList:
+        submissionList[student]=[]
+
+    # now fill in the map
     for submission in submissions_for_sslected_assignment['studentSubmissions']:
         studentId = submission['userId']
-        studentProfile = service.userProfiles().get(userId=studentId).execute()
-        studentName = studentProfile['name']['fullName']
-        filtered=[]
-        updated=False
-        print(studentName)
-        assignmentSub = submission['assignmentSubmission']
-        if ('attachments') in assignmentSub:
-            for singleAssignment in assignmentSub['attachments']:
-                if 'driveFile' in singleAssignment:
-                    driveFile = singleAssignment['driveFile']
-                    if ('alternateLink') in driveFile:                        
-                        fileName = driveFile['title']
-                        if (".java" in fileName):
-                            if (filter1.Filter_On_File_Name_Only() == False or filter1.Use_File(fileName, [], False)):
-                                
-                                className = fileName.replace(".java","")
-                                txtName = fileName + ".txt"
-                                tempName = tempDir + "\\" + txtName
-                                print ("Downloding to " + tempName)
-                                outFile = io.FileIO(tempName, mode='wb')
-                                fileID = driveFile['id']
-                                try:
-                                    request = drive.files().get_media(fileId=fileID)
-                                    downloader=http.MediaIoBaseDownload(outFile, request, chunksize=CHUNK_SIZE)
-                                    download_finished = False
-                                    while download_finished is False:
-                                        _, download_finished = downloader.next_chunk()
-                                    print ("Download complete")
-                                    (success, ignore1, package, ignore2, output) = RunJavaUtils.Copy_And_Run_Java_File(tempDir, tempName, className)
-                                except:
-                                    success = False
-                                    package = ""
-                                    output = ["could not download file"]
-                                if (filter1.Use_File(fileName, output, success)):
-                                    if (success):                                                               
-                                        RunJavaUtils.Append_Run_Data(fileName, success, studentName, package, className, output, tempName, excelWriter, addOutput, addFile, goldLines)
-                                        updated = True
-                                    else:
-                                        RunJavaUtils.Append_Run_Data(fileName, success, studentName, package, className, output, tempName, excelWriter, addOutput, addFile, goldLines)
-                                        updated = True
-                            else:
-                                print ("Filtered out: " + fileName + " base on name")
-                                filtered.append(fileName)
-        if (updated == False):
-            ranLine = "missing"
-            if (len(filtered)):
-                ranLine = ranLine + " filtered out these files: " + str(filtered)            
-            RunJavaUtils.Append_Run_Data("missing", ranLine, studentName, "missing", "", [""], "", excelWriter, addOutput, addFile, goldLines)
+        submissionList[studentIDToNameMap[studentId]].append(submission)
+
+
+    # finally, walk through each student alphabetically, and get all the submission from that student
+    for student in studentNameList:
+        for submission in submissionList[student]:
+            studentId = submission['userId']
+            studentProfile = service.userProfiles().get(userId=studentId).execute()
+            studentName = studentProfile['name']['fullName']
+            filtered=[]
+            updated=False
+            print(studentName)
+            assignmentSub = submission['assignmentSubmission']
+            if ('attachments') in assignmentSub:
+                for singleAssignment in assignmentSub['attachments']:
+                    if 'driveFile' in singleAssignment:
+                        driveFile = singleAssignment['driveFile']
+                        if ('alternateLink') in driveFile:
+                            fileName = driveFile['title']
+                            if (".java" in fileName):
+                                if (filter1.Filter_On_File_Name_Only() == False or filter1.Use_File(fileName, [], False)):
+
+                                    className = fileName.replace(".java","")
+                                    txtName = fileName + ".txt"
+                                    tempName = tempDir + "\\" + txtName
+                                    print ("Downloding to " + tempName)
+                                    outFile = io.FileIO(tempName, mode='wb')
+                                    fileID = driveFile['id']
+                                    try:
+                                        request = drive.files().get_media(fileId=fileID)
+                                        downloader=http.MediaIoBaseDownload(outFile, request, chunksize=CHUNK_SIZE)
+                                        download_finished = False
+                                        while download_finished is False:
+                                            _, download_finished = downloader.next_chunk()
+                                        print ("Download complete")
+                                        (success, ignore1, package, ignore2, output) = RunJavaUtils.Copy_And_Run_Java_File(tempDir, tempName, className)
+                                    except:
+                                        success = False
+                                        package = ""
+                                        output = ["could not download file"]
+                                    if (filter1.Use_File(fileName, output, success)):
+                                        if (success):
+                                            RunJavaUtils.Append_Run_Data(fileName, success, studentName, package, className, output, tempName, excelWriter, addOutput, addFile, goldLines)
+                                            updated = True
+                                        else:
+                                            RunJavaUtils.Append_Run_Data(fileName, success, studentName, package, className, output, tempName, excelWriter, addOutput, addFile, goldLines)
+                                            updated = True
+                                else:
+                                    print ("Filtered out: " + fileName + " base on name")
+                                    filtered.append(fileName)
+            if (updated == False):
+                ranLine = "missing"
+                if (len(filtered)):
+                    ranLine = ranLine + " filtered out these files: " + str(filtered)
+                RunJavaUtils.Append_Run_Data("missing", ranLine, studentName, "missing", "", [""], "", excelWriter, addOutput, addFile, goldLines)
 
 
 def main():
