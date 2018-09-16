@@ -4,7 +4,7 @@ from shutil import copyfile
 import subprocess
 import re
 import tempfile
-import ExcelWriter 
+import ExcelWriter
 from unittest.test import test_result
 
 
@@ -143,7 +143,7 @@ def Run_Java_File(destName, package, baseName):
             success = False
         try:
             os.remove(fullClassName)
-        except os.FileNotFoundError:
+        except FileNotFoundError:
             print("build failed")
     if (package != ""):
         os.rmdir(package)
