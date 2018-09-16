@@ -28,10 +28,10 @@ class Filter:
         return False
 
     def Init_Check_Bool(self, check, initVal):
-        if (check == None):
+        if check is None:
             return [True]
         else:
-            return [initVal for i in range(len(check))]
+            return [initVal] * len(check)
 
     def Check_In(self, isIn, check, line):
         if (check != None):
