@@ -181,7 +181,7 @@ def main():
         
 #        files = Create_File_List(studentDir)    
 #    RunJavaUtils.Copy_And_Run_Files(studentDir, files, tempPath, writer, addOutput, addFile, goldenLines)
-        writer.Close()        
+        writer.Close()
         RunJavaUtils.Clean_And_Remove_Temp_Dir(tempPath)
 
 def pretty_print(data):

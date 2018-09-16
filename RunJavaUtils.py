@@ -125,7 +125,7 @@ def Run_Java_File(destName, package, baseName):
     success = True
     if (package != ""):
         os.mkdir(package)
-        fullClassName = package + "\\" + className
+        fullClassName = os.path.join(package, className)
         invokeName = package + "." + invokeName            
     try:
         subprocess.check_output(["javac", destName], stderr=True)
@@ -143,7 +143,7 @@ def Run_Java_File(destName, package, baseName):
             success = False
         try:
             os.remove(fullClassName)
-        except FileNotFoundError:
+        except os.FileNotFoundError:
             print("build failed")
     if (package != ""):
         os.rmdir(package)
@@ -154,7 +154,7 @@ def Copy_And_Run_Java_File(tempDir, source, classNameArg):
     if (classNameArg != None):
         className = classNameArg            
     destName = className + ".java"
-    dest = tempDir + "\\" + destName
+    dest = os.path.join(tempDir, destName)
     print("copying " + source + " to " + dest)
     copyfile(source, dest)
     cwd = os.getcwd()
@@ -206,7 +206,7 @@ def Copy_And_Run_Files(sourceDir, files, tempDir, excelWriter, addOutput, addFil
     Create_Header( excelWriter, addOutput, addFile, goldLines)
 
     for file in files: 
-        source = sourceDir + "\\" + file       
+        source = os.path.join(sourceDir, file)
         (success, author, package, className, output) = Copy_And_Run_Java_File(tempDir, source, None)
         Append_Run_Data(file, success, author, package, className, output, source, excelWriter, addOutput, addFile, goldLines)
              
