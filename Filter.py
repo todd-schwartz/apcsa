@@ -1,5 +1,3 @@
-import argparse
-
 class Filter:
     def __init__(self):
         self.inFileName = None
