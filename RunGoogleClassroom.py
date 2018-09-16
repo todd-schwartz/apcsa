@@ -24,7 +24,7 @@ SCOPES = ['https://www.googleapis.com/auth/classroom.courses.readonly',
 courseId = '14911700941'
 
 def Parse_Args(filter1):
-    parser = argparse.ArgumentParser()    
+    parser = argparse.ArgumentParser(parents=[tools.argparser])
     parser.add_argument('-assignment', type=str, help="name of the assignment from google classroom (if not specified, all assignments will be listed for you to choose from)")
     parser.add_argument('-xlsx', type=str, required=True, help="name of the .xlsx file where the results should be stored")
     parser.add_argument('-output', dest='output', action='store_true', help='append the output from running the file into the .csv')
@@ -36,21 +36,15 @@ def Parse_Args(filter1):
     parser.set_defaults(output=True)
     parser.set_defaults(file=True)
     args = parser.parse_args()
-    parsed = True
-    if (args.xlsx == None):
-        print("Missing required argument (they're all required)")
-        parser.print_help()
-        parsed = False
-    else:
-        filter1.Read_Args(args)    
-    return (parsed, args.assignment, args.xlsx, args.output, args.file, args.golden_source)
+    filter1.Read_Args(args)
+    return args
 
-def Open_Classroom():
+def Open_Classroom(args):
     store = file.Storage('token.json')
     creds = store.get()
     if not creds or creds.invalid:
         flow = client.flow_from_clientsecrets('credentials.json', SCOPES)
-        creds = tools.run_flow(flow, store)
+        creds = tools.run_flow(flow, store, flags=args)
     service = build('classroom', 'v1', http=creds.authorize(Http()))
     drive = build('drive', 'v3', http=creds.authorize(Http()))
     return (service, drive)
@@ -87,7 +81,7 @@ def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWr
     submissions_for_sslected_assignment = studentSubmissions.list(courseId=courseId,
                                                                   courseWorkId=assignmentSelected['id']).execute()
 
-    
+
     # We want to print the submissions sorted by name, so create a sorted list of names
     # and a map of ID -> name
     studentIDToNameMap={}
@@ -99,21 +93,21 @@ def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWr
         studentNameList.append(studentName)
         studentID = student['profile']['id']
         studentIDToNameMap[studentID]=studentName
-        
+
     #sort the student names
     studentNameList.sort()
-    
+
     # we will create a map of list of submissions - sorted by name, init the map
-    submissionList={}    
+    submissionList={}
     for student in studentNameList:
         submissionList[student]=[]
-        
+
     # now fill in the map
     for submission in submissions_for_sslected_assignment['studentSubmissions']:
         studentId = submission['userId']
         submissionList[studentIDToNameMap[studentId]].append(submission)
 
-    
+
     # finally, walk through each student alphabetically, and get all the submission from that student
     for student in studentNameList:
         for submission in submissionList[student]:
@@ -128,14 +122,14 @@ def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWr
                 for singleAssignment in assignmentSub['attachments']:
                     if 'driveFile' in singleAssignment:
                         driveFile = singleAssignment['driveFile']
-                        if ('alternateLink') in driveFile:                        
+                        if ('alternateLink') in driveFile:
                             fileName = driveFile['title']
                             if (".java" in fileName):
                                 if (filter1.Filter_On_File_Name_Only() == False or filter1.Use_File(fileName, [], False)):
-                                    
+
                                     className = fileName.replace(".java","")
                                     txtName = fileName + ".txt"
-                                    tempName = tempDir + "\\" + txtName
+                                    tempName = os.path.join(tempDir, txtName)
                                     print ("Downloding to " + tempName)
                                     outFile = io.FileIO(tempName, mode='wb')
                                     fileID = driveFile['id']
@@ -144,15 +138,15 @@ def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWr
                                         downloader=http.MediaIoBaseDownload(outFile, request, chunksize=CHUNK_SIZE)
                                         download_finished = False
                                         while download_finished is False:
-                                            _, download_finished = downloader.next_chunk()                                    
+                                            _, download_finished = downloader.next_chunk()
                                         print ("Download complete")
                                         (success, ignore1, package, ignore2, output) = RunJavaUtils.Copy_And_Run_Java_File(tempDir, tempName, className)
-                                    except:
+                                    except Exception as e:
                                         success = False
                                         package = ""
-                                        output = ["could not download file"]                                
-                                    if (filter1.Use_File(fileName, output, success)): 
-                                        if (success):                                                               
+                                        output = ["could not download file: " + str(e)]
+                                    if (filter1.Use_File(fileName, output, success)):
+                                        if (success):
                                             RunJavaUtils.Append_Run_Data(fileName, success, studentName, package, className, output, tempName, excelWriter, addOutput, addFile, goldLines)
                                             updated = True
                                         else:
@@ -164,31 +158,30 @@ def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWr
             if (updated == False):
                 ranLine = "missing"
                 if (len(filtered)):
-                    ranLine = ranLine + " filtered out these files: " + str(filtered)            
+                    ranLine = ranLine + " filtered out these files: " + str(filtered)
                 RunJavaUtils.Append_Run_Data("missing", ranLine, studentName, "missing", "", [""], "", excelWriter, addOutput, addFile, goldLines)
 
 
 def main():
     filter1 = Filter.Filter()
-    (parsed, assignment, xls, addOutput, addFile, goldenSource) = Parse_Args(filter1)
-    (service, drive) = Open_Classroom()        
-    if (parsed):
-        assignmentSelected = Verify_Assignment(service, assignment)
-        if (assignmentSelected != None):  
-            tempPath = RunJavaUtils.Create_Temp_Dir()
-            goldenLines = []
-            if (goldenSource != None):
-                (success, author, package, className, goldenLines) = RunJavaUtils.Copy_And_Run_Java_File(tempPath, goldenSource, None)
-                if (success == False):
-                    print("Build failure for golden source")
-                    return            
-            writer = ExcelWriter.ExcelWriter(xls)                  
-            Copy_Student_Java_Files(tempPath, service, drive, assignmentSelected, writer, addOutput, addFile, goldenLines, filter1)
+    args = Parse_Args(filter1)
+    (service, drive) = Open_Classroom(args)
+    assignmentSelected = Verify_Assignment(service, args.assignment)
+    if assignmentSelected:
+        tempPath = RunJavaUtils.Create_Temp_Dir()
+        goldenLines = []
+        if args.golden_source is not None:
+            (success, author, package, className, goldenLines) = RunJavaUtils.Copy_And_Run_Java_File(tempPath, args.goldenSource, None)
+            if (success == False):
+                print("Build failure for golden source")
+                return
+        writer = ExcelWriter.ExcelWriter(args.xlsx)
+        Copy_Student_Java_Files(tempPath, service, drive, assignmentSelected, writer, args.output, args.file, goldenLines, filter1)
                 
         
 #        files = Create_File_List(studentDir)    
 #    RunJavaUtils.Copy_And_Run_Files(studentDir, files, tempPath, writer, addOutput, addFile, goldenLines)
-        writer.Close()        
+        writer.Close()
         RunJavaUtils.Clean_And_Remove_Temp_Dir(tempPath)
 
 def pretty_print(data):
