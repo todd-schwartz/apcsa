@@ -12,13 +12,9 @@ class Filter:
         parser.add_argument('-filt_not_in_output', type=str, nargs="+", help="use this student submission if the output of running the program does not contain the string(s) passed in  (case insensitive) (anded with all other filt options selected)")
     
     def Convert_Arg(self, arg):
-        if (arg == None):
+        if arg is None:
             return None
-        else:
-            for i in range(0, len(arg)):
-                arg[i] = arg[i].lower()
-            return arg
-
+        return arg.lower()
         
     def Read_Args(self, args):
         self.inFileName = self.Convert_Arg(args.filt_in_file_name)
