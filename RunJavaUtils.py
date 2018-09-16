@@ -138,7 +138,7 @@ def Run_Java_File(destName, package, baseName):
             if (package != ""):
                 move(className, fullClassName)
             raw_output = subprocess.check_output(["java", invokeName], stderr=subprocess.STDOUT)
-            output = raw_output.splitlines()
+            output = raw_output.decode('utf-8', 'replace').splitlines()
         except subprocess.CalledProcessError as e:
             output = ["run error: " + str(e.output)]
             success = False
