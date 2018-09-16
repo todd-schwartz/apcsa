@@ -54,11 +54,7 @@ class Filter:
                     self.Check_Not_In(checkResults, check, line)
                     
     def Final_Loop(self, checkResults):
-        for check in checkResults:
-            if (check == False):
-                return False
-        return True
-        
+        return all(checkResults)
         
     def Use_File(self, originalFileName, output, success):
         inFileNameRes = self.Init_Check_Bool(self.inFileName, False)
