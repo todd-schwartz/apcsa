@@ -99,7 +99,7 @@ def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWr
                                 
                                 className = fileName.replace(".java","")
                                 txtName = fileName + ".txt"
-                                tempName = tempDir + "\\" + txtName
+                                tempName = os.path.join(tempDir, txtName)
                                 print ("Downloding to " + tempName)
                                 outFile = io.FileIO(tempName, mode='wb')
                                 fileID = driveFile['id']
@@ -111,10 +111,10 @@ def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWr
                                         _, download_finished = downloader.next_chunk()
                                     print ("Download complete")
                                     (success, ignore1, package, ignore2, output) = RunJavaUtils.Copy_And_Run_Java_File(tempDir, tempName, className)
-                                except:
+                                except Exception as e:
                                     success = False
                                     package = ""
-                                    output = ["could not download file"]
+                                    output = ["could not download file: {}".format(e)]
                                 if (filter1.Use_File(fileName, output, success)):
                                     if (success):                                                               
                                         RunJavaUtils.Append_Run_Data(fileName, success, studentName, package, className, output, tempName, excelWriter, addOutput, addFile, goldLines)
@@ -151,7 +151,7 @@ def main():
         
 #        files = Create_File_List(studentDir)    
 #    RunJavaUtils.Copy_And_Run_Files(studentDir, files, tempPath, writer, addOutput, addFile, goldenLines)
-        writer.Close()        
+        writer.Close()
         RunJavaUtils.Clean_And_Remove_Temp_Dir(tempPath)
 
 def pretty_print(data):
