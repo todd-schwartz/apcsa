@@ -4,6 +4,7 @@ from shutil import copyfile
 import subprocess
 import re
 import tempfile
+import io
 import ExcelWriter
 from unittest.test import test_result
 
@@ -61,7 +62,7 @@ def Compare_Lines(goldenList, studentList):
 # that is the package name.
 # same with the className  
 def Get_Java_Info(fileName):
-    javaFile = open(fileName, "r", encoding="latin-1" )
+    javaFile = io.open(fileName, "r", encoding="latin-1" )
     package = ""
     className = ""
     author = "Unknown"
@@ -128,23 +129,21 @@ def Run_Java_File(destName, package, baseName):
         fullClassName = os.path.join(package, className)
         invokeName = package + "." + invokeName            
     try:
-        subprocess.check_output(["javac", destName], stderr=True)
-    except subprocess.CalledProcessError:
-        output = ["build error"]
+        subprocess.check_output(["javac", destName])
+    except subprocess.CalledProcessError as e:
+        output = ["build error: " + str(e.output)]
         success = False
     if (success == True):
         try:
             if (package != ""):
                 move(className, fullClassName)
-            binaryOutput = subprocess.check_output(["java", invokeName], stderr=True)
-            output=Change_Binary_To_String_List(binaryOutput)                        
-        except subprocess.CalledProcessError:
-            output = ["run error"]
+            raw_output = subprocess.check_output(["java", invokeName], stderr=subprocess.STDOUT)
+            output = raw_output.decode('utf-8', 'replace').splitlines()
+        except subprocess.CalledProcessError as e:
+            output = ["run error: " + str(e.output)]
             success = False
-        try:
+        if os.path.exists(fullClassName):
             os.remove(fullClassName)
-        except FileNotFoundError:
-            print("build failed")
     if (package != ""):
         os.rmdir(package)
     return (success, output)
