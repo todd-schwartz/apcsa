@@ -130,7 +130,7 @@ def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWr
                                     className = fileName.replace(".java","")
                                     txtName = fileName + ".txt"
                                     tempName = os.path.join(tempDir, txtName)
-                                    print ("Downloding to " + tempName)
+                                    print ("Downloading to " + tempName)
                                     outFile = io.FileIO(tempName, mode='wb')
                                     fileID = driveFile['id']
                                     try:
