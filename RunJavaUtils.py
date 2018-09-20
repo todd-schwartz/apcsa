@@ -1,3 +1,4 @@
+import shutil
 import os
 from shutil import move
 from shutil import copyfile
@@ -14,12 +15,7 @@ def Create_Temp_Dir():
     return tempfile.mkdtemp()
 
 def Clean_And_Remove_Temp_Dir(tempDir):
-    dirs = os.listdir(tempDir)
-    for file in dirs:
-        if (file != "." and file != ".."):            
-            source = os.path.join(tempDir, file)
-            os.remove(source)
-    os.rmdir(tempDir)
+    shutil.rmtree(tempDir)
 
 #
 # We need the source lines to be surrounded by "    " in order for the 
