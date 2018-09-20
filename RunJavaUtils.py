@@ -55,27 +55,22 @@ def Get_Java_Info(fileName):
     package = ""
     className = ""
     author = "Unknown"
-    authKey = "@author"
     for line in javaFile:        
-        if ("package" in line and (("import" in line) == False) and package == ""):
-            package = line.replace("package","", 1)
-            package = package.replace(" ","")
-            package = package.replace(";","")
-            package = package.strip()
-        if ("class" in line and className == ""):
-            classNamePos = line.find("class") + len("class") + 1
-            classNameList = re.split("\W+", line[classNamePos:])
-            if (len(classNameList)):
-                className = classNameList[0]
-            className = className.strip()
-            break;
-        if (authKey in line):
-            authPos = line.find(authKey)
-            authPos += len(authKey)
-            author = line[authPos:]
-            author = author.strip()
+        if package == "":
+            m = re.match(r'\s*package\s+([a-zA-Z_]\w*)\s*;', line)
+            if m is not None:
+                package = m.group(1)
+                continue
+        if className == "":
+            m = re.search(r'\bclass\s+([a-zA-Z_]\w*)\b', line)
+            if m is not None:
+                className = m.group(1)
+                break
+        m = re.search(r'@author\b(.*)$', line)
+        if m is not None:
+            author = m.group(1).strip()
     javaFile.close()
-    return (author, package, className)
+    return author, package, className
 
 
 
