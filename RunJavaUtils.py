@@ -11,14 +11,7 @@ from unittest.test import test_result
 
 
 def Create_Temp_Dir():    
-    tempBase = os.path.join(tempfile.mkdtemp(), 'javaTemp')
-    temp = tempBase
-    tempCount = 0
-    while(os.path.exists(temp)):
-        tempCount += 1
-        temp = tempBase + str(tempCount)
-    os.mkdir(temp)
-    return temp
+    return tempfile.mkdtemp()
 
 def Clean_And_Remove_Temp_Dir(tempDir):
     dirs = os.listdir(tempDir)
