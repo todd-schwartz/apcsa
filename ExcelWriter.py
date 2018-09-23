@@ -4,7 +4,8 @@ import xlsxwriter
 from lib2to3.pgen2.tokenize import tabsize
 
 
-class ExcelWriter:    
+class ExcelWriter:
+    letters=['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q']    
     def __init__(self, name):
             self.workbook = xlsxwriter.Workbook(name)
             self.worksheet = self.workbook.add_worksheet()
@@ -19,6 +20,36 @@ class ExcelWriter:
             self.maxCol = []
             self.indentFormat = {}
             self.name=name
+            self.writtenCells = {}
+            
+    def Add_Header(self, headerLines):
+        row = 0;
+        maxCol = 0;
+        for header in headerLines:
+            col = 0
+            for headerLine in header:
+                self.Write_String(row, col, headerLine)
+                col = col + 1
+                maxCol = max(col, maxCol)
+        self.currentCol = maxCol
+        
+    
+    def Write_String(self, row, col, stringVal, formatValue):
+        # by putting chr(2) at the front of the string, google docs will not remove
+        # the leading spaces
+        tabString = " " * 4
+        stringVal = stringVal.replace("\t", tabString)
+        self.Inc_Max_Col(stringVal)
+        
+
+        stringVal = chr(2) + stringVal;
+        stringVal = stringVal.strip()
+        print(stringVal)
+        # storing it in col/row because we are going to walk down the columns & merge the cells
+        if (col not in self.writtenCells):
+            self.writtenCells[col] = []       
+        self.writtenCells[col].append((row, stringVal, formatValue))
+        self.worksheet.write_string(row, col, stringVal, formatValue)
             
     def Get_Indent_Format(self, indentSize):
         if (indentSize not in self.indentFormat):
@@ -36,44 +67,64 @@ class ExcelWriter:
         self.endRow = self.currentRow
         self.currentCol = 0
         
-    def Inc_Max_Col(self, stringVal, addVal):
+    def Inc_Max_Col(self, stringVal):
         while (len(self.maxCol) <= self.currentCol):
             self.maxCol.append(1)
         self.maxCol[self.currentCol] = max(self.maxCol[self.currentCol], len(stringVal))
 
     
-    def Add_String(self, stringVal):
-        self.Inc_Max_Col(stringVal, 0)
-        self.worksheet.write_string(self.currentRow, self.currentCol, stringVal, self.default_format)
+    def Add_String(self, stringVal):        
+        self.Write_String(self.currentRow, self.currentCol, stringVal, self.default_format)
         self.currentCol = self.currentCol + 1
     
     def Add_String_Array(self, lines, tabSize):
         currentRow = self.currentRow
+        
         for line in lines:
-            spacePos = 0
-            insertSize = 0
-            while(spacePos < len(line) and line[spacePos].isspace()):
-                if (line[spacePos] == "\t"):
-                    insertSize += tabSize
-                else:
-                    insertSize += 1
-                spacePos += 1            
-            finalLine = line[spacePos:].strip()
-            self.Inc_Max_Col(finalLine, insertSize)
-            insertFormat = self.Get_Indent_Format(insertSize)
-            self.worksheet.write_string(currentRow, self.currentCol, finalLine, insertFormat)
+           
+            finalLine = line.rstrip();
+#            spacePos = 0
+#             while(spacePos < len(line) and line[spacePos].isspace()):
+#                 if (line[spacePos] == "\t"):
+#                     insertSize += tabSize
+#                 else:
+#                     insertSize += 1
+#                 spacePos += 1            
+#             finalLine = line[spacePos:].strip()
+            insertFormat = self.Get_Indent_Format(0)
+            self.Write_String(currentRow, self.currentCol, finalLine, insertFormat)
             currentRow += 1
         self.endRow = max(self.endRow, currentRow)
         self.currentCol = self.currentCol + 1
         
+    def Possible_Merge(self, colNumber, priorVal, row, stringVal, formatVal):
+        if ((priorVal + 1) < row):
+            mergeStart = self.letters[colNumber] + str(priorVal + 1)
+            mergeEnd = self.letters[colNumber] + str(row + 1)
+            print("Merging " + mergeStart + ":" + mergeEnd + " = " + stringVal)                    
+            self.worksheet.merge_range(mergeStart + ":" +  mergeEnd, stringVal, formatVal)
+        
+    def Merge_Cells(self):
+        for colNumber in self.writtenCells:
+            priorVal = 0
+            lastString = ""
+            lastFormat = None
+            for (row, stringVal, formatVal) in self.writtenCells[colNumber]:
+                self.Possible_Merge(colNumber, priorVal, row, stringVal, formatVal)            
+                priorVal = row
+                lastString = stringVal
+                lastFormat = formatVal
+            self.Possible_Merge(colNumber, priorVal, self.endRow, lastString, lastFormat)
+        
         
     def Close(self):
-        letters=['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q']
+        #self.Merge_Cells()
+        
         colNum = 0
         for colWidth in self.maxCol:
-            colString = letters[colNum] + ":" + letters[colNum]
+            colString = self.letters[colNum] + ":" + self.letters[colNum]
+            #print ("setting width " + colString + " " + str(colWidth))
             self.worksheet.set_column(colString, colWidth)
             colNum = colNum + 1        
         self.workbook.close()
         print("Created:" + self.name)        
-
