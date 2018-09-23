@@ -74,6 +74,21 @@ def Verify_Assignment(service, assignmentName):
             print("Assignment: " + assignmentName + " Not found, do not specify the assignment on the command line to get a full list")
     return assignmentSelected
 
+def Sort_Student_Names(studentInfo):
+    # We want to print the submissions sorted by name, so create a sorted list of names
+    # and a map of ID -> name
+    studentIDToNameMap={}
+    studentNameList=[] 
+    studentIDs = studentInfo['students']
+    for student in studentIDs:
+        studentName = student['profile']['name']['familyName'].lower()
+        studentNameList.append(studentName)
+        studentID = student['profile']['id']
+        studentIDToNameMap[studentID]=studentName
+    #sort the student names
+    studentNameList.sort()
+    return (studentNameList, studentIDToNameMap)
+
 CHUNK_SIZE = 1024 * 1024
 def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWriter, addOutput, addFile, goldLines, filter1):
     RunJavaUtils.Create_Header( excelWriter, addOutput, addFile, goldLines)
@@ -82,20 +97,7 @@ def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWr
                                                                   courseWorkId=assignmentSelected['id']).execute()
 
 
-    # We want to print the submissions sorted by name, so create a sorted list of names
-    # and a map of ID -> name
-    studentIDToNameMap={}
-    studentNameList=[]
-    studentInfo = service.courses().students().list(courseId=courseId).execute();
-    studentIDs = studentInfo['students']
-    for student in studentIDs:
-        studentName = student['profile']['name']['fullName'].lower()
-        studentNameList.append(studentName)
-        studentID = student['profile']['id']
-        studentIDToNameMap[studentID]=studentName
-
-    #sort the student names
-    studentNameList.sort()
+    (studentNameList, studentIDToNameMap) = Sort_Student_Names(service.courses().students().list(courseId=courseId).execute())
 
     # we will create a map of list of submissions - sorted by name, init the map
     submissionList={}
@@ -113,7 +115,7 @@ def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWr
         for submission in submissionList[student]:
             studentId = submission['userId']
             studentProfile = service.userProfiles().get(userId=studentId).execute()
-            studentName = studentProfile['name']['fullName']
+            studentName = studentProfile['name']['familyName'] + ", " + studentProfile['name']['givenName']
             filtered=[]
             updated=False
             print(studentName)

@@ -163,23 +163,18 @@ def Copy_And_Run_Java_File(tempDir, source, classNameArg):
     os.remove(dest)
     return (success, author, package, className, output)
 
-def Add_Header(values, excelWriter):
-
-    for value in values:
-        excelWriter.Add_String(value)
-    excelWriter.Inc_Row()
     
 def Create_Header(excelWriter, addOutput, addFile, goldLines):
-    header = ["Author", "Ran"]
+    header = [["Author"], ["Ran"]]
     if (len(goldLines) != 0):
         addOutput = True
-        header.append("diffLines")
-        header.append("golden output")
+        header.append(["Diff","Lines"])
+        header.append(["Golden", "Output"])
     if (addOutput):
-        header.append("output")
+        header.append(["Output"])
     if (addFile):
-        header.append("sourceFile")
-    Add_Header(header, excelWriter)
+        header.append(["SourceFile"])
+    excelWriter.Add_Header(header, [0, 1])
     
 def Append_Run_Data(fileName, success, author, package, className, output, source, excelWriter, addOutput, addFile, goldLines):
         excelWriter.Add_String(author)       
