@@ -149,10 +149,10 @@ def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWr
                                         output = ["could not download file: " + str(e)]
                                     if (filter1.Use_File(fileName, output, success)):
                                         if (success):
-                                            RunJavaUtils.Append_Run_Data(fileName, success, studentName, package, className, output, tempName, excelWriter, addOutput, addFile, goldLines)
+                                            RunJavaUtils.Append_Run_Data(str(success), success, studentName, package, className, output, tempName, excelWriter, addOutput, addFile, goldLines)
                                             updated = True
                                         else:
-                                            RunJavaUtils.Append_Run_Data(fileName, success, studentName, package, className, output, tempName, excelWriter, addOutput, addFile, goldLines)
+                                            RunJavaUtils.Append_Run_Data(str(success), success, studentName, package, className, output, tempName, excelWriter, addOutput, addFile, goldLines)
                                             updated = True
                                 else:
                                     print ("Filtered out: " + fileName + " base on name")
@@ -161,7 +161,7 @@ def Copy_Student_Java_Files(tempDir, service, drive, assignmentSelected, excelWr
                 ranLine = "missing"
                 if (len(filtered)):
                     ranLine = ranLine + " filtered out these files: " + str(filtered)
-                RunJavaUtils.Append_Run_Data("missing", ranLine, studentName, "missing", "", [""], "", excelWriter, addOutput, addFile, goldLines)
+                RunJavaUtils.Append_Run_Data(ranLine, False, studentName, "missing", "", [""], "", excelWriter, addOutput, addFile, goldLines)
 
 
 def main():
@@ -173,7 +173,7 @@ def main():
         tempPath = RunJavaUtils.Create_Temp_Dir()
         goldenLines = []
         if args.golden_source is not None:
-            (success, author, package, className, goldenLines) = RunJavaUtils.Copy_And_Run_Java_File(tempPath, args.goldenSource, None)
+            (success, author, package, className, goldenLines) = RunJavaUtils.Copy_And_Run_Java_File(tempPath, args.golden_source, None)
             if (success == False):
                 print("Build failure for golden source")
                 return
@@ -183,7 +183,7 @@ def main():
         
 #        files = Create_File_List(studentDir)    
 #    RunJavaUtils.Copy_And_Run_Files(studentDir, files, tempPath, writer, addOutput, addFile, goldenLines)
-        writer.Close()
+        writer.Create_Excel_File()
         RunJavaUtils.Clean_And_Remove_Temp_Dir(tempPath)
 
 def pretty_print(data):

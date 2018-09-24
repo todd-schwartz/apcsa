@@ -25,7 +25,7 @@ def Create_File_List(sourceDir):
 def Parse_Args():
     parser = argparse.ArgumentParser()    
     parser.add_argument('-student_dir', type=str, required=True, help="path to where the student copies of the java source resides")
-    parser.add_argument('-xls', type=str, required=True, help="name of the .xlsx file where the results should be stored")
+    parser.add_argument('-xlsx', type=str, required=True, help="name of the .xlsx file where the results should be stored")
     parser.add_argument('-output', dest='output', action='store_true', help='append the output from running the file into the .csv')
     parser.add_argument('-no_output', dest='output', action='store_false', help='do not append the output from running the file into the .csv')
     parser.add_argument('-file', dest='file', action='store_true', help='append the original student source into the .csv')
@@ -40,7 +40,7 @@ def Parse_Args():
         parser.print_help()
         parsed = False
     
-    return (parsed, args.student_dir, args.xls, args.output, args.file, args.golden_source)
+    return (parsed, args.student_dir, args.xlsx, args.output, args.file, args.golden_source)
 
 
 def main():    
@@ -49,7 +49,7 @@ def main():
         tempPath = RunJavaUtils.Create_Temp_Dir()
         goldenLines = []
         if (golden_source != None):
-            (success, author, package, className, goldenLines) = RunJavaUtils.Copy_And_Run_Java_File(tempPath, golden_source)
+            (success, ignore1, ignore2, ignore3, goldenLines) = RunJavaUtils.Copy_And_Run_Java_File(tempPath, golden_source, None)
             if (success == False):
                 print("Build failure for golden source")
                 return
@@ -57,7 +57,7 @@ def main():
         
         files = Create_File_List(studentDir)    
         RunJavaUtils.Copy_And_Run_Files(studentDir, files, tempPath, writer, addOutput, addFile, goldenLines)
-        writer.Close()        
+        writer.Create_Excel_File()        
         RunJavaUtils.Clean_And_Remove_Temp_Dir(tempPath)
 
 if __name__ == '__main__':

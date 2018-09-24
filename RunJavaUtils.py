@@ -49,7 +49,7 @@ def Compare_Lines(goldenList, studentList):
         if (i >= len(goldenList) or i >= len(studentList)):
             mismatch.append("->")
             anyMismatch=True
-        elif (goldenList[i] != studentList[i]):
+        elif (goldenList[i].strip() != studentList[i].strip()):
             mismatch.append("->")
             anyMismatch=True
         else:
@@ -165,20 +165,25 @@ def Copy_And_Run_Java_File(tempDir, source, classNameArg):
 
     
 def Create_Header(excelWriter, addOutput, addFile, goldLines):
+    fonts = ['Arial', 'Arial']
     header = [["Author"], ["Ran"]]
     if (len(goldLines) != 0):
         addOutput = True
         header.append(["Diff","Lines"])
         header.append(["Golden", "Output"])
+        fonts.append('Courier New')
+        fonts.append('Courier New')
     if (addOutput):
         header.append(["Output"])
+        fonts.append('Courier New')
     if (addFile):
         header.append(["SourceFile"])
-    excelWriter.Add_Header(header, [0, 1])
+        fonts.append('Courier New')
+    excelWriter.Add_Header(header, fonts, [0, 1])
     
-def Append_Run_Data(fileName, success, author, package, className, output, source, excelWriter, addOutput, addFile, goldLines):
-        excelWriter.Add_String(author)       
-        excelWriter.Add_String(str(success))
+def Append_Run_Data(successString, success, author, package, className, output, source, excelWriter, addOutput, addFile, goldLines):
+        excelWriter.Next_Student(author)       
+        excelWriter.Add_String(str(successString),0)
         stringLists=[]
         if (len(goldLines)):
             if (success):
@@ -193,7 +198,7 @@ def Append_Run_Data(fileName, success, author, package, className, output, sourc
             excelWriter.Add_String_Array(stringList, 8)
         if (addFile and source != ""):
             excelWriter.Add_String_Array(Convert_Source_To_Excel_Compat_List(source), 4)
-        excelWriter.Inc_Row()  
+
 # one by one, copy the files from the source dir to the temp dir, run them,
 # and store off the results in a .csv
 def Copy_And_Run_Files(sourceDir, files, tempDir, excelWriter, addOutput, addFile, goldLines):
@@ -202,7 +207,7 @@ def Copy_And_Run_Files(sourceDir, files, tempDir, excelWriter, addOutput, addFil
     for file in files: 
         source = os.path.join(sourceDir, file)
         (success, author, package, className, output) = Copy_And_Run_Java_File(tempDir, source, None)
-        Append_Run_Data(file, success, author, package, className, output, source, excelWriter, addOutput, addFile, goldLines)
+        Append_Run_Data(str(success), success, author, package, className, output, source, excelWriter, addOutput, addFile, goldLines)
              
  
                 
