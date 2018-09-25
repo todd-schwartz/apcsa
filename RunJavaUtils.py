@@ -6,8 +6,7 @@ import re
 import tempfile
 import io
 import ExcelWriter
-from unittest.test import test_result
-
+import sys
 
 
 def Create_Temp_Dir():    
@@ -214,3 +213,34 @@ def Copy_And_Run_Files(sourceDir, files, tempDir, excelWriter, addOutput, addFil
     
   
     
+def main(argv):
+    if len(argv) != 2:
+        sys.stderr.write('usage: {} expression\n'.format(argv[0]))
+
+    # Save our current directory to return to on completion
+    cwd = os.getcwd()
+
+    # Create a temporary scratch space
+    tmp = Create_Temp_Dir()
+    os.chdir(tmp)
+
+    # Write a class that prints the given expression
+    with open('Temp.java', 'wt') as f:
+        f.write('class Temp {{\n'
+                '    public static void main(String[] args) {{\n'
+                '        System.out.println({});\n'
+                '    }}\n'
+                '}}\n'.format(argv[1]))
+
+    # Compile and run this class, displaying the outcome
+    result, output = Run_Java_File('Temp.java', '', 'Temp')
+    print('\n'.join(output))
+
+    # Switch out of the temporary directory so we can remove it
+    os.chdir(cwd)
+    Clean_And_Remove_Temp_Dir(tmp)
+
+    return 0 if result else -1
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
