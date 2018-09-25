@@ -6,7 +6,6 @@ import re
 import tempfile
 import io
 import ExcelWriter
-from unittest.test import test_result
 
 
 
