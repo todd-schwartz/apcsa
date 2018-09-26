@@ -171,7 +171,7 @@ def main():
         tempPath = RunJavaUtils.Create_Temp_Dir()
         goldenLines = []
         if args.golden_source is not None:
-            (success, author, package, className, goldenLines) = RunJavaUtils.Copy_And_Run_Java_File(tempPath, args.goldenSource, None)
+            (success, author, package, className, goldenLines) = RunJavaUtils.Copy_And_Run_Java_File(tempPath, args.golden_source, None)
             if (success == False):
                 print("Build failure for golden source")
                 return
