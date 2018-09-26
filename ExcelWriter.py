@@ -44,7 +44,7 @@ class ExcelWriter:
         self.fontNames=fontNames
         self.mergeable.update(mergeable)
         
-    # Not the most generic name, but the needs to be called when we add the column zero block (student name for us).
+    # Not the most generic name, but this needs to be called when we add the column zero block (student name for us).
     # This lets us start the next list of lists
     def Next_Student(self, studentName):
         self.entries.append([])
@@ -54,7 +54,7 @@ class ExcelWriter:
     def String_Manip(self, stringVal, tabSize):
         tabString = " " * tabSize 
         stringVal = stringVal.replace("\t", tabString)
-        stringVal = stringVal.rstrip();
+        stringVal = stringVal.rstrip()
         return stringVal
         
     #add a single string to the list of lists, this string will occupy one column
@@ -63,7 +63,7 @@ class ExcelWriter:
 
     #add a list into a column, this list will end up occupying N rows
     def Add_String_Array(self, lines, tabSize):
-        for i in range(0, len(lines)):
+        for i in range(len(lines)):
             lines[i] = self.String_Manip(lines[i], tabSize)
         self.entries[-1].append(lines)
         
@@ -89,8 +89,8 @@ class ExcelWriter:
     # Figure out the width of all the columns, sort
     # them, then chop off the last 3 to kill off the giant
     # outliers (3 was an arbitrary number that seemed to work)
-    # averge didn't work well, and neither did median (when we
-    # have a lot of missing assignment, the median goes to zero).
+    # average didn't work well, and neither did median (when we
+    # have a lot of missing assignments, the median goes to zero).
     def Compute_Col_Width(self):
         maxCol = []
         colWidths=[[] for i in range(0, len(self.fontNames))]
