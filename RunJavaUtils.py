@@ -1,3 +1,4 @@
+import platform
 import shutil
 import os
 from shutil import move
@@ -99,6 +100,42 @@ def Change_Binary_To_String_List(binary):
 
     return result
 
+def which(cmd):
+    '''
+    Resolve the absolute path to a comand.
+    '''
+
+    # Try to find the absolute path to this command.
+    try:
+        with open(os.devnull, 'wt') as f:
+            fullpath = subprocess.check_output(['which', cmd], stderr=f)
+        return fullpath.decode('utf-8', 'replace').strip()
+    except subprocess.CalledProcessError:
+        pass
+
+    # If which failed, just return the original command.
+    return cmd
+
+def sandbox(args):
+    '''
+    Wrap the execution of an untrusted command to limit its potential for harm.
+    '''
+
+    assert len(args) > 0
+
+    if platform.system() == 'Darwin': # macOS
+
+        # sandbox-exec does not do $PATH resolution, so we need to pass the
+        # command to run by absolute path.
+        args = [which(args[0])] + args[1:]
+
+        policy = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'macos-sandbox.sb')
+        return ['sandbox-exec', '-f', policy] + args
+
+    # TODO: support others OSes :)
+
+    return args
+
 #
 # Runs the java file from the command line.  The output is in binary format (that is what subprocess returns
 # If it doesn't run, output will be equal to a string.
@@ -121,7 +158,7 @@ def Run_Java_File(destName, package, baseName):
         try:
             if (package != ""):
                 move(className, fullClassName)
-            raw_output = subprocess.check_output(["java", invokeName], stderr=subprocess.STDOUT)
+            raw_output = subprocess.check_output(sandbox(["java", invokeName]), stderr=subprocess.STDOUT)
             output = raw_output.decode('utf-8', 'replace').splitlines()
         except subprocess.CalledProcessError as e:
             output = ["run error: " + str(e.output)]

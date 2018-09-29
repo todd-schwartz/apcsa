@@ -1,0 +1,29 @@
+; Sandbox policy for running Java on macOS.
+
+; Set the version of the policy language we are using. Version 1 is the only
+; valid version.
+(version 1)
+
+; By default, deny anything not explicitly allowed by this policy. Some
+; examples: all network access, macOS IPC, file writing, ...
+(deny default)
+
+; Allow reading any file, directory or metadata. It seems too complex to track
+; down what files Java reads when running a class file and the sandbox trace
+; functionality (`(debug all)(trace "mylog.log")`) no longer seems to work in
+; recent macOS.
+(allow file-read*)
+
+; Deny forking, but allow any other process-related functionality. E.g. execvp.
+(deny process-fork)
+(allow process*)
+
+; Allow Mach kernel IPC (used by most processes).
+(allow mach-lookup)
+
+; Allow read-only sysctls. Note: if you are playing with sandbox policies, the
+; semantics of `(deny sysctl-write)` in a `(default allow)` policy is to deny
+; read-only sysctls as well as writable ones. Mentioned in
+; https://reverse.put.as/wp-content/uploads/2011/09/Apple-Sandbox-Guide-v1.0.pdf
+; and I've confirmed this is still the behavior on macOS 10.13.6.
+(allow sysctl-read)
