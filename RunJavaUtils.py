@@ -72,33 +72,6 @@ def Get_Java_Info(fileName):
     javaFile.close()
     return author, package, className
 
-
-
-def Change_Binary_To_String_List(binary):
-    result=[]
-    tempStr = ""
-    if (len(binary) > 0):
-        for a in binary:
-            if (isinstance(a, str)):
-                tempStr = tempStr + a
-            if (a > 8 and a < 127):
-                c = chr(a)
-                if (c != '\r'):
-                    if (c == '\n'):
-                        #remove trailing spaces, they are impossible to mark wrong since they are ambiguous in text
-                        tempStr = tempStr.rstrip()
-                        result.append(tempStr)
-                        tempStr = ""
-                    else:
-                        tempStr = tempStr + str(c)
-            else:
-                tempStr = tempStr + "utf(" + str(a) + ")"
-    if (len(tempStr) != 0):
-        tempStr = tempStr.rstrip()
-        result.append(tempStr)
-
-    return result
-
 #
 # Runs the java file from the command line.  The output is in binary format (that is what subprocess returns
 # If it doesn't run, output will be equal to a string.
